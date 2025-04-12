@@ -137,21 +137,33 @@ $HashOutputObject = [System.Collections.Generic.List[Object]]::New()
 
 $SystemCount = 1
 Foreach ($System in $Systems) {
-    Write-Progress -Activity "Checking $($System.System)..." -Status "$SystemCount of $($Systems.count)" -PercentComplete "$($SystemCount/$Systems.count)" -id 1
+    $SystemCount++
+    $PercentCompleteSystems = [Math]::Min(100, [int](($SystemCount / $Systems.Count) * 100))
+
+    Write-Progress -Activity "Processing Systems..." -Status "Checking $($System.System) ($SystemCount of $($Systems.count))" -PercentComplete $PercentCompleteSystems -id 1
     
     $SystemID = $RASystems | Where-Object { $_.Name -eq $System.System } | Select-Object -ExpandProperty ID
-    $RAGames = Get-RAGamesList -SystemID $SystemID
 
     $RomFiles = Get-ChildItem -Path "$ROM_BASE_PATH\$($System.SystemFolder)" -File
-    $GameCount = 1
+    If ($RomFiles.Count -eq 0) {
+        Write-Host "No ROM files found in $ROM_BASE_PATH\$($System.SystemFolder)" -ForegroundColor Yellow
+        Continue # Skip to the next system
+    }
+
+    $RAGames = Get-RAGamesList -SystemID $SystemID
+
+    $GameCount = 0
     Foreach ($RomFile in $RomFiles) {
-        Write-Progress -Activity "Checking $($RomFile.Name)..." -Status "$GameCount of $($RomFiles.count)" -PercentComplete "$($GameCount/$RomFiles.count)" -id 2 -ParentId 1
+        $GameCount++
+        $PercentCompleteGames = [Math]::Min(100, [int](($GameCount / $RomFiles.Count) * 100))
+
+        Write-Progress -Activity "Processing ROMs for $($System.System)" -CurrentOperation "$($RomFile.Name)" -Status "$GameCount of $($RomFiles.count)" -PercentComplete $PercentCompleteGames -id 2 -ParentId 1
         # Get the current ROM file hash
         $FileHash = cmd /c "$RAHASHER_PATH\RAHasher.exe" $SystemID $RomFile.FullName
 
         # If the hash is malformed, set the match to false
         If ($FileHash.Length -ne 32) {
-            Write-Host "Unable to parse $($RomFile.Name)" -ForegroundColor Red
+            #Write-Host "Unable to parse $($RomFile.Name)" -ForegroundColor Red
             $HashOutputObject.add([PSCustomObject]@{
                 MatchFound = $false
                 System = $System.System
@@ -162,7 +174,7 @@ Foreach ($System in $Systems) {
                 RAID = ''
                 CheevoCount = ''
             })
-            $GameCount++
+            
             Continue
         }
 
@@ -180,7 +192,7 @@ Foreach ($System in $Systems) {
                 RAID = ''
                 CheevoCount = ''
             })
-            $GameCount++
+            
             Continue
         }
 
@@ -195,10 +207,12 @@ Foreach ($System in $Systems) {
             RAID = $RomMatch.ID
             CheevoCount = $RomMatch.NumAchievements
         })
-        $GameCount++
     }
-    $SystemCount++
+
+    Write-Progress -Activity "Processing ROMs for $($System.System)" -Completed -id 2
 }
+
+Write-Progress -Activity "Processing Systems..." -Completed -id 1
 
 # Output CSV report
 $HashOutputObject | Export-Csv "$HASH_OUTPUT_PATH\RA_HashMapReport.csv" -NoTypeInformation
