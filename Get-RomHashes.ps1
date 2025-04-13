@@ -179,7 +179,7 @@ Foreach ($System in $Systems) {
         }
 
         # If no RA match was found on the hash, set the match as false
-        $RomMatch = $RAGames | Where-Object { $_.hashes -match $FileHash }
+        $RomMatch = $RAGames | Where-Object { $FileHash -in $_.hashes }
         If (($RomMatch | Measure-Object).Count -lt 1) {
             #Write-Host "Bad file hash for $($RomFile.Name)" -ForegroundColor Red
             $HashOutputObject.add([PSCustomObject]@{
