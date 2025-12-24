@@ -82,6 +82,7 @@ The resulting CSV report contains the following columns:
 
 ## Notes
 
+- PowerShell now warns the user of a script execution risk when running Invoke-WebRequest. The script only makes calls out to 2 RetroAchievements API endpoints, but one of these endpoints can be called numerous times depending on how many systems you have ROMs for.
 - Ensure that your system folder names in `$SYSTEM_TO_FOLDER_MAP` match exactly with the corresponding subfolders in `$ROM_BASE_PATH`.
 - The script uses RAHasher to generate hashes for ROMs. Ensure that RAHasher is correctly installed and accessible from the path specified in `$RAHASHER_PATH`.
 
