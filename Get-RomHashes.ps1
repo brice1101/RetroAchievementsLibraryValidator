@@ -2,10 +2,15 @@
 # Suppress RAHasher warnings
 # Add write-progress and sub progress
 
+# Hashing mode
+# $true  = Use native PowerShell MD5 hashing (cross-platform, recommended)
+# $false = Use RAHasher.exe (Windows-only legacy mode)
+$USE_NATIVE_HASHING = $true
+
 # Path to ROM files
 # ROMs should be contained within folders of each system
 $ROM_BASE_PATH = ''
-# Path to the RAHasher.exe program
+# Path to the RAHasher.exe program (only used if $USE_NATIVE_HASHING = $false)
 $RAHASHER_PATH = ''
 # Path to export hash report
 $HASH_OUTPUT_PATH = ''
@@ -70,6 +75,20 @@ $SYSTEM_TO_FOLDER_MAP = @{
     'WASM-4'                      = ''
     'Watara Supervision'          = ''
     'WonderSwan'                  = ''
+}
+
+function Get-RomHash {
+    param (
+    [string]$RomPath,
+    [int]$SystemID
+    )
+
+    if ($USE_NATIVE_HASHING) {
+        return (Get-FileHash -Algorithm MD5 -Path $RomFile.FullName).Hash.ToLower()
+    } else {
+        # Legacy Windows-only hashing
+        return & "$RAHASHER_PATH/RAHasher.exe" $SystemID $RomPath
+    }
 }
 
 # Gets a full system list from RetroAchievements
@@ -159,7 +178,7 @@ Foreach ($System in $Systems) {
 
         Write-Progress -Activity "Processing ROMs for $($System.System)" -CurrentOperation "$($RomFile.Name)" -Status "$GameCount of $($RomFiles.count)" -PercentComplete $PercentCompleteGames -id 2 -ParentId 1
         # Get the current ROM file hash
-        $FileHash = cmd /c "$RAHASHER_PATH\RAHasher.exe" $SystemID $RomFile.FullName
+        $FileHash = Get-RomHash -RomPath $RomFile.FullName -SystemID $SystemID
 
         # If the hash is malformed, set the match to false
         If ($FileHash.Length -ne 32) {
