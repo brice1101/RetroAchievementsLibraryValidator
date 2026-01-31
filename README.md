@@ -1,3 +1,4 @@
+
 # RetroAchievements Library Validator (Cross-Platform Fork)
 
 This project validates ROM files against the RetroAchievements by hashing local ROMs and comparing them to known hashes from the RetroAchievements API.
